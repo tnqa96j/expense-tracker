@@ -24,6 +24,15 @@
 4. 完成後**必須**跑 `/code-review`，有問題先修正，再 commit。
 5. 不得擴大範圍：票沒寫的功能不要做。發現 spec 或票有缺漏或矛盾，停下來問我。
 
+### 測試
+
+- TDD 迴圈（紅、綠）中**只跑單一測試檔**；完整測試只在 `/implement` 結尾跑一次。
+- 接縫（要測的公開介面）**優先選在 `src/services/` 與純函式**，不要把 e2e 當作迴圈內的測試。
+- 邏輯用單元測試驗證（月度加總、日期規則、類別重新分配、CSV 內容、本機儲存讀寫）；UI 行為用元件測試（Testing Library），不開瀏覽器。
+- Playwright e2e **只用於 3 到 5 條關鍵流程**，在發 PR 前跑一次，**禁止**放進 TDD 迴圈。
+- 寫 e2e 時：開發階段只跑 Chromium、重用已啟動的開發伺服器、用預先寫入本機儲存的資料取代逐筆操作畫面，並避免固定等待時間。
+- 要新增測試工具或改變測試分層時，先問我。
+
 ### Commit 訊息（慣例式提交，Conventional Commits）
 
 所有 commit 訊息**必須**符合 [Conventional Commits](https://www.conventionalcommits.org/) 格式：

@@ -16,6 +16,7 @@ applyTo: "**"
 | Formatting | dayjs (dates), numeral (numbers) |
 | Logic | ts-pattern |
 | Styling | clsx + tailwind-merge, tw-animate-css |
+| Testing | Vitest + Testing Library (unit and component tests), Playwright (a few key e2e flows only) |
 | Tooling | pnpm, Biome (`pnpm lint` + `pnpm format` — **not** ESLint/Prettier) |
 
 ## Project Structure
