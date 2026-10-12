@@ -56,18 +56,34 @@
 - Merge Danger 要特別留意：**修改本機儲存的資料格式屬於單向門**（既有使用者的資料可能壞掉），必須明確標示並說明相容或遷移做法。
 - 發完 PR 就停下來。**禁止**自行 merge、approve 或關閉 PR，merge 由我決定。
 
-## 4. 用語
+## 4. Issue 標題
+
+建立任何 issue（spec、票、bug）時，標題**必須**使用與 commit 訊息相同的慣例式格式：
+
+- 格式：`<type>(<scope>): <description>`，type 與 scope 的規則同「Commit 訊息」一節。
+- 描述使用英文祈使句，開頭小寫、不加句號，整行不超過 72 字元。
+- 一張票只描述一個可交付的結果，標題要看得出「做完會得到什麼」。
+- spec 使用 `spec: <description>`。
+- 順序與依賴關係用 issue 的阻擋關係表達，**不要**在標題加 `[1/4]` 之類的順序前綴。
+- 範例：
+  - `spec: expense tracker`
+  - `feat(transactions): record and manage income and expenses`
+  - `fix(summary): exclude future dates from monthly totals`
+- 建立 issue 後**必須**檢查標題格式，不符合就用 `gh issue edit <編號> --title "..."` 修正。
+- PR 標題沿用對應票的標題。
+
+## 5. 用語
 
 - 領域用語以專案的詞彙表為準（目前檔案：`glossy.md`）。程式、commit、PR、issue 中都使用其中的詞，不要自創同義詞。
 - 遇到詞彙表沒有的新概念，列出來問我，不要自行命名後直接使用。
 
-## 5. 修改範圍的底線
+## 6. 修改範圍的底線
 
 - **禁止**刪除或改寫既有的詞彙表、spec、ADR，除非我明確要求。
 - **禁止**使用強制推送（`git push --force`）或改寫已推送的歷史。
 - **禁止**在 commit 或 PR 中放入金鑰、密碼、token 或個人資料。
 
-## 6. 不確定時
+## 7. 不確定時
 
 - 規則沒涵蓋的情況，選擇最保守、可回復的做法，並在回覆中說明你的判斷。
 - 做完一件事就簡短回報結果，不要重述過程。
