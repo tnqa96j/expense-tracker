@@ -43,3 +43,61 @@ test("預設今天為紀錄日期且限制不可選未來日期", async ({ page 
   await expect(date).toHaveValue(expectedDate);
   await expect(date).toHaveAttribute("max", expectedDate);
 });
+
+test("重新命名會更新既有紀錄，重新分配後可刪除類別並在重新載入後保留", async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    window.localStorage.setItem(
+      "expense-tracker.records",
+      JSON.stringify([
+        {
+          id: "category-e2e-income",
+          type: "income",
+          amount: 52000,
+          date: "2025-01-11",
+          category: "薪資",
+          note: "一月薪資",
+        },
+      ]),
+    );
+  });
+  await page.reload();
+
+  const record = page.getByRole("listitem").filter({ hasText: "一月薪資" });
+  await expect(record).toContainText("薪資");
+
+  await page.getByRole("button", { name: "管理類別" }).click();
+  const incomeCategories = page.getByRole("list", { name: "收入類別" });
+  await incomeCategories.getByRole("button", { name: "重新命名薪資" }).click();
+  await page.getByLabel("重新命名收入類別").fill("工作收入");
+  await page.getByRole("button", { name: "儲存名稱" }).click();
+
+  await expect(record).toContainText("工作收入");
+  await expect(
+    incomeCategories.getByRole("button", { name: "刪除工作收入" }),
+  ).toBeDisabled();
+
+  await page.getByRole("button", { name: "收起類別" }).click();
+  await record.getByRole("button", { name: "編輯工作收入" }).click();
+  await page.getByRole("button", { name: "獎金" }).click();
+  await page.getByRole("button", { name: "儲存修改" }).click();
+  await expect(record).toContainText("獎金");
+
+  await page.getByRole("button", { name: "管理類別" }).click();
+  await page
+    .getByRole("list", { name: "收入類別" })
+    .getByRole("button", { name: "刪除工作收入" })
+    .click();
+  const confirmation = page.getByRole("alertdialog");
+  await confirmation.getByRole("button", { name: "確認刪除" }).click();
+
+  await page.reload();
+  await expect(
+    page.getByRole("listitem").filter({ hasText: "一月薪資" }),
+  ).toContainText("獎金");
+  await page.getByRole("button", { name: "管理類別" }).click();
+  await expect(
+    page.getByRole("list", { name: "收入類別" }).getByText("工作收入"),
+  ).not.toBeVisible();
+});

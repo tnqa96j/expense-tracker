@@ -4,6 +4,7 @@ import {
   recordDraftSchema,
   recordEntrySchema,
 } from "@/lib/records";
+import { findStoredCategory } from "@/services/category-store";
 
 const STORAGE_KEY = "expense-tracker.records";
 
@@ -47,6 +48,9 @@ export function listRecords(): RecordEntry[] {
 
 export function createRecord(input: RecordDraft): RecordEntry {
   const draft = recordDraftSchema.parse(input);
+  if (!findStoredCategory(draft.type, draft.category)) {
+    throw new Error("請選擇有效的收支類別");
+  }
   const created = recordEntrySchema.parse({
     ...draft,
     id: createId(),
@@ -61,6 +65,9 @@ export function createRecord(input: RecordDraft): RecordEntry {
 
 export function updateRecord(id: string, input: RecordDraft): RecordEntry {
   const draft = recordDraftSchema.parse(input);
+  if (!findStoredCategory(draft.type, draft.category)) {
+    throw new Error("請選擇有效的收支類別");
+  }
   const records = readRecords();
   const recordIndex = records.findIndex((record) => record.id === id);
 
@@ -81,4 +88,18 @@ export function updateRecord(id: string, input: RecordDraft): RecordEntry {
 
 export function deleteRecord(id: string): void {
   writeRecords(readRecords().filter((record) => record.id !== id));
+}
+
+export function renameRecordCategory(
+  type: RecordEntry["type"],
+  previousName: string,
+  nextName: string,
+): void {
+  writeRecords(
+    readRecords().map((record) =>
+      record.type === type && record.category === previousName
+        ? { ...record, category: nextName }
+        : record,
+    ),
+  );
 }

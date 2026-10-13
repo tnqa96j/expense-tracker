@@ -10,11 +10,13 @@ import {
   Pencil,
   Plus,
   ReceiptText,
+  Settings2,
   Trash2,
 } from "lucide-react";
 import numeral from "numeral";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import CategoryManager from "@/app/_components/category-manager";
 import {
   AlertDialogContent,
   AlertDialogDescription,
@@ -30,13 +32,12 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
-  DEFAULT_EXPENSE_CATEGORIES,
-  DEFAULT_INCOME_CATEGORIES,
   getTodayDate,
   type RecordDraft,
   type RecordEntry,
   recordDraftSchema,
 } from "@/lib/records";
+import { listCategories } from "@/services/categories";
 import {
   createRecord,
   deleteRecord,
@@ -51,9 +52,6 @@ const defaultValues = (): RecordDraft => ({
   category: "薪資",
   note: "",
 });
-
-const categoriesFor = (type: RecordDraft["type"]) =>
-  type === "income" ? DEFAULT_INCOME_CATEGORIES : DEFAULT_EXPENSE_CATEGORIES;
 
 function RecordTypeIcon({ type }: { type: RecordEntry["type"] }) {
   return type === "income" ? (
@@ -70,6 +68,7 @@ function formatAmount(amount: number): string {
 export default function RecordsPage() {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
   const [deletingRecord, setDeletingRecord] = useState<RecordEntry | null>(
     null,
   );
@@ -83,6 +82,14 @@ export default function RecordsPage() {
     enabled: typeof window !== "undefined",
     queryFn: listRecords,
     queryKey: ["records"],
+  });
+  const categoriesQuery = useQuery({
+    enabled: typeof window !== "undefined",
+    queryFn: () => ({
+      income: listCategories("income"),
+      expense: listCategories("expense"),
+    }),
+    queryKey: ["categories"],
   });
   const saveMutation = useMutation({
     mutationFn: async (draft: RecordDraft) =>
@@ -105,8 +112,9 @@ export default function RecordsPage() {
   );
 
   const handleTypeChange = (type: RecordDraft["type"]) => {
+    const nextCategory = categoriesQuery.data?.[type][0]?.name ?? "";
     form.setValue("type", type, { shouldDirty: true, shouldValidate: true });
-    form.setValue("category", categoriesFor(type)[0], {
+    form.setValue("category", nextCategory, {
       shouldDirty: true,
       shouldValidate: true,
     });
@@ -168,6 +176,17 @@ export default function RecordsPage() {
                 <span className="text-sm font-medium text-slate-500">筆</span>
               </p>
             </div>
+            <Button
+              aria-controls="category-manager"
+              aria-expanded={categoryManagerOpen}
+              onClick={() => setCategoryManagerOpen((open) => !open)}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <Settings2 aria-hidden="true" className="size-4" />
+              {categoryManagerOpen ? "收起類別" : "管理類別"}
+            </Button>
           </div>
         </section>
 
@@ -197,6 +216,7 @@ export default function RecordsPage() {
                   <fieldset
                     aria-label="收支類型"
                     className="grid grid-cols-2 gap-2"
+                    disabled={categoriesQuery.isPending}
                   >
                     <legend className="col-span-2 mb-2 text-sm font-semibold text-slate-700">
                       收支類型
@@ -300,22 +320,24 @@ export default function RecordsPage() {
                         <legend className="mb-2 w-full text-sm font-semibold text-slate-700">
                           類別
                         </legend>
-                        {categoriesFor(selectedType).map((category) => (
-                          <Button
-                            aria-pressed={field.value === category}
-                            className={
-                              field.value === category
-                                ? "bg-emerald-800 text-white"
-                                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                            }
-                            key={category}
-                            onClick={() => field.onChange(category)}
-                            size="sm"
-                            type="button"
-                          >
-                            {category}
-                          </Button>
-                        ))}
+                        {(categoriesQuery.data?.[selectedType] ?? []).map(
+                          ({ name: category }) => (
+                            <Button
+                              aria-pressed={field.value === category}
+                              className={
+                                field.value === category
+                                  ? "bg-emerald-800 text-white"
+                                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                              }
+                              key={category}
+                              onClick={() => field.onChange(category)}
+                              size="sm"
+                              type="button"
+                            >
+                              {category}
+                            </Button>
+                          ),
+                        )}
                       </fieldset>
                       {fieldState.error && (
                         <FieldError>{fieldState.error.message}</FieldError>
@@ -477,6 +499,12 @@ export default function RecordsPage() {
             )}
           </section>
         </div>
+
+        {categoryManagerOpen && (
+          <div className="mt-6" id="category-manager">
+            <CategoryManager />
+          </div>
+        )}
 
         <AlertDialogRoot
           onOpenChange={(open) => {
