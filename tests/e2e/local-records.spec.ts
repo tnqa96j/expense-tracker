@@ -62,7 +62,7 @@ test("重新命名會更新既有紀錄，重新分配後可刪除類別並在�
       ]),
     );
   });
-  await page.reload();
+  await page.goto("/?month=2025-01");
 
   const record = page.getByRole("listitem").filter({ hasText: "一月薪資" });
   await expect(record).toContainText("薪資");
@@ -80,7 +80,10 @@ test("重新命名會更新既有紀錄，重新分配後可刪除類別並在�
 
   await page.getByRole("button", { name: "收起類別" }).click();
   await record.getByRole("button", { name: "編輯工作收入" }).click();
-  await page.getByRole("button", { name: "獎金" }).click();
+  await page
+    .getByRole("group", { name: "收支類別", exact: true })
+    .getByRole("button", { name: "獎金" })
+    .click();
   await page.getByRole("button", { name: "儲存修改" }).click();
   await expect(record).toContainText("獎金");
 
@@ -100,4 +103,86 @@ test("重新命名會更新既有紀錄，重新分配後可刪除類別並在�
   await expect(
     page.getByRole("list", { name: "收入類別" }).getByText("工作收入"),
   ).not.toBeVisible();
+});
+
+test("切換月份並依收支類型及類別篩選月度摘要", async ({ page }) => {
+  await page.evaluate(() => {
+    window.localStorage.setItem(
+      "expense-tracker.records",
+      JSON.stringify([
+        {
+          id: "summary-salary",
+          type: "income",
+          amount: 52000,
+          date: "2025-01-11",
+          category: "薪資",
+          note: "一月薪資",
+        },
+        {
+          id: "summary-bonus",
+          type: "income",
+          amount: 3000,
+          date: "2025-01-25",
+          category: "獎金",
+          note: "年終",
+        },
+        {
+          id: "summary-food",
+          type: "expense",
+          amount: 135,
+          date: "2025-01-12",
+          category: "飲食",
+          note: "午餐",
+        },
+        {
+          id: "summary-february",
+          type: "income",
+          amount: 1000,
+          date: "2025-02-01",
+          category: "薪資",
+          note: "二月薪資",
+        },
+      ]),
+    );
+  });
+  await page.goto("/?month=2025-01");
+
+  const summary = page.getByRole("region", { name: "2025年1月月度摘要" });
+  await expect(summary).toContainText("NT$ 55,000");
+  await expect(summary).toContainText("NT$ 135");
+  await expect(summary).toContainText("薪資");
+  await expect(summary).toContainText("飲食");
+  await expect(
+    page.getByRole("list", { name: "篩選後的收支紀錄" }),
+  ).toContainText("一月薪資");
+
+  await page.getByLabel("摘要月份").fill("2025-02");
+  await expect(page).toHaveURL(/month=2025-02/);
+  await expect(
+    page.getByRole("region", { name: "2025年2月月度摘要" }),
+  ).toContainText("NT$ 1,000");
+  await expect(
+    page.getByRole("list", { name: "篩選後的收支紀錄" }),
+  ).toContainText("二月薪資");
+
+  await page.getByLabel("摘要月份").fill("2025-01");
+  const typeFilters = page.getByRole("group", { name: "收支類型篩選" });
+  await typeFilters.getByRole("button", { name: "支出" }).click();
+  const visibleRecords = page.getByRole("list", { name: "篩選後的收支紀錄" });
+  await expect(visibleRecords).toContainText("午餐");
+  await expect(visibleRecords).not.toContainText("一月薪資");
+
+  await page
+    .getByRole("group", { name: "收支類別篩選" })
+    .getByRole("button", { name: "飲食" })
+    .click();
+  await expect(visibleRecords).toContainText("午餐");
+  await expect(visibleRecords).not.toContainText("年終");
+
+  await page.getByLabel("摘要月份").fill("2025-03");
+  const emptyMonthSummary = page.getByRole("region", {
+    name: "2025年3月月度摘要",
+  });
+  await expect(emptyMonthSummary.getByText("尚無收入紀錄")).toBeVisible();
+  await expect(emptyMonthSummary.getByText("尚無支出紀錄")).toBeVisible();
 });
