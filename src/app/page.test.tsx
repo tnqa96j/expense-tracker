@@ -97,4 +97,65 @@ describe("收支紀錄畫面", () => {
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(screen.getByRole("listitem")).toHaveTextContent("午餐");
   });
+
+  it("可新增、重新命名及刪除未使用的收入類別", async () => {
+    const user = userEvent.setup();
+    renderRecordsPage();
+
+    await user.click(screen.getByRole("button", { name: "管理類別" }));
+    const incomeCategories = screen.getByRole("list", { name: "收入類別" });
+    await user.type(screen.getByLabelText("新增收入類別"), "稿費");
+    await user.click(screen.getByRole("button", { name: "新增類別" }));
+    expect(
+      await within(incomeCategories).findByText("稿費"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "稿費" })).toBeInTheDocument();
+
+    await user.click(
+      within(incomeCategories).getByRole("button", { name: "重新命名稿費" }),
+    );
+    const nameInput = screen.getByLabelText("重新命名收入類別");
+    await user.clear(nameInput);
+    await user.type(nameInput, "專案收入");
+    await user.click(screen.getByRole("button", { name: "儲存名稱" }));
+    expect(
+      await within(incomeCategories).findByText("專案收入"),
+    ).toBeInTheDocument();
+
+    await user.click(
+      within(incomeCategories).getByRole("button", { name: "刪除專案收入" }),
+    );
+    const dialog = screen.getByRole("alertdialog");
+    await user.click(within(dialog).getByRole("button", { name: "確認刪除" }));
+    await waitFor(() => {
+      expect(
+        within(incomeCategories).queryByText("專案收入"),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it("停用仍有收支紀錄使用中的類別刪除操作", async () => {
+    const user = userEvent.setup();
+    createRecord({
+      type: "income",
+      amount: 52000,
+      date: "2025-01-11",
+      category: "薪資",
+    });
+    renderRecordsPage();
+
+    await user.click(screen.getByRole("button", { name: "管理類別" }));
+
+    expect(
+      screen.getByText("1 筆紀錄使用中，請先重新分配紀錄"),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("list", { name: "收入類別" })).getByRole(
+        "button",
+        {
+          name: "刪除薪資",
+        },
+      ),
+    ).toBeDisabled();
+  });
 });

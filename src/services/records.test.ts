@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { type RecordDraft, recordDraftSchema } from "@/lib/records";
+import type { RecordDraft } from "@/lib/records";
 import {
   createRecord,
   deleteRecord,
@@ -71,8 +71,8 @@ describe("本機收支紀錄", () => {
     expect(() =>
       createRecord({ ...incomeDraft, date: "9999-12-31" }),
     ).toThrow();
-    expect(
-      recordDraftSchema.safeParse({ ...incomeDraft, category: "飲食" }).success,
-    ).toBe(false);
+    expect(() => createRecord({ ...incomeDraft, category: "飲食" })).toThrow(
+      "請選擇有效的收支類別",
+    );
   });
 });

@@ -1,21 +1,5 @@
 import { z } from "zod";
 
-export const DEFAULT_INCOME_CATEGORIES = [
-  "薪資",
-  "獎金",
-  "投資",
-  "其他收入",
-] as const;
-export const DEFAULT_EXPENSE_CATEGORIES = [
-  "飲食",
-  "交通",
-  "居住",
-  "娛樂",
-  "購物",
-  "醫療",
-  "其他支出",
-] as const;
-
 function isCalendarDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return false;
@@ -49,14 +33,16 @@ const recordFieldsSchema = z.object({
   note: z.string().max(500, "備註不可超過 500 個字").optional(),
 });
 
+const categoryNameSchema = z.string().trim().min(1, "請選擇收支類別").max(40);
+
 export const recordDraftSchema = z.discriminatedUnion("type", [
   recordFieldsSchema.extend({
     type: z.literal("income"),
-    category: z.enum(DEFAULT_INCOME_CATEGORIES),
+    category: categoryNameSchema,
   }),
   recordFieldsSchema.extend({
     type: z.literal("expense"),
-    category: z.enum(DEFAULT_EXPENSE_CATEGORIES),
+    category: categoryNameSchema,
   }),
 ]);
 
@@ -68,11 +54,11 @@ const recordEntryFieldsSchema = recordFieldsSchema.extend({
 export const recordEntrySchema = z.discriminatedUnion("type", [
   recordEntryFieldsSchema.extend({
     type: z.literal("income"),
-    category: z.enum(DEFAULT_INCOME_CATEGORIES),
+    category: categoryNameSchema,
   }),
   recordEntryFieldsSchema.extend({
     type: z.literal("expense"),
-    category: z.enum(DEFAULT_EXPENSE_CATEGORIES),
+    category: categoryNameSchema,
   }),
 ]);
 
