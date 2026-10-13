@@ -8,9 +8,16 @@
 ## 1. 分支
 
 - **禁止**直接在 `main` 上開發、commit 或 push。
-- 開始任何票或改動前，**必須**先切到最新的 `main`，再建立新分支：
-  - 功能：`feat/<issue編號>-<簡短英文描述>`
-  - 修 bug：`fix/<issue編號>-<簡短英文描述>`
+- 開始任何票或改動前，**必須**先切到最新的 `main`，再建立新分支。
+- 分支名稱格式：`<type>(<scope>)/<description>`
+  - `type` 同 commit 訊息的 type（常用 `feat`、`fix`、`refactor`、`test`、`docs`、`chore`）。
+  - `scope` 是功能模組，使用詞彙表中的英文用語（例如 `transactions`、`categories`、`summary`、`export`），並與 commit 訊息的 scope 一致。
+  - `description` 是簡短英文，全小寫、單字以連字號相連，描述這個分支做的事。
+  - **分支名稱中禁止出現任何數字**（包含 issue 編號、版本號）。與票的對應由 PR 內文的 `Closes #<issue編號>` 負責。
+  - 正確範例：`feat(transactions)/record-income-expense`、`fix(summary)/exclude-future-dates`
+  - 錯誤範例：`feat/2-local-income-expense`（沒有 scope、含數字）、`feat(transactions)/add-form-v2`（含數字）
+- 建立分支前，先告訴我打算使用的名稱並等我確認。
+- 分支名稱含括號，在終端機中**必須用引號包住**，例如 `git switch -c "feat(transactions)/record-income-expense"`。
 - 一個分支只做一張票。不要順手混入不相關的改動。
 - 有依賴關係的票（被別的票擋住），**必須**等前置票的 PR 已 merge 進 `main`，再從更新後的 `main` 開新分支。
 
