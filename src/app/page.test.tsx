@@ -8,7 +8,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NuqsTestingAdapter } from "nuqs/adapters/testing";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import RecordsPage from "@/app/_components/records-page";
 import { createRecord } from "@/services/records";
 
@@ -234,5 +234,46 @@ describe("收支紀錄畫面", () => {
       ),
     );
     expect(filteredRecordList().getByText(/午餐/)).toBeInTheDocument();
+  });
+
+  it("即使目前套用月份與類別篩選，匯出仍包含全部本機收支紀錄", async () => {
+    const user = userEvent.setup();
+    createRecord({
+      type: "income",
+      amount: 52000,
+      date: "2025-01-11",
+      category: "薪資",
+      note: "一月薪資",
+    });
+    createRecord({
+      type: "expense",
+      amount: 135,
+      date: "2025-02-12",
+      category: "飲食",
+      note: "午餐",
+    });
+    const createObjectUrl = vi.fn((_file: Blob) => "blob:records-csv");
+    const revokeObjectUrl = vi.fn();
+    const clickLink = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: createObjectUrl,
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      configurable: true,
+      value: revokeObjectUrl,
+    });
+    renderRecordsPage("?month=2025-01&type=income&category=薪資");
+
+    await user.click(screen.getByRole("button", { name: "匯出 CSV" }));
+
+    expect(createObjectUrl).toHaveBeenCalledOnce();
+    const [file] = createObjectUrl.mock.calls[0];
+    expect(file).toBeInstanceOf(Blob);
+    expect(file.type).toBe("text/csv;charset=utf-8");
+    expect(clickLink).toHaveBeenCalledOnce();
+    expect(revokeObjectUrl).toHaveBeenCalledWith("blob:records-csv");
   });
 });

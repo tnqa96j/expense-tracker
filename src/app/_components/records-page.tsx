@@ -9,6 +9,7 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Download,
   Pencil,
   Plus,
   ReceiptText,
@@ -20,6 +21,7 @@ import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import CategoryManager from "@/app/_components/category-manager";
+import { downloadRecordsCsv } from "@/app/_lib/export";
 import {
   filterMonthlyRecords,
   summarizeMonthlyRecords,
@@ -282,6 +284,15 @@ export default function RecordsPage() {
                 variant="outline"
               >
                 <ChevronRight aria-hidden="true" className="size-4" />
+              </Button>
+              <Button
+                disabled={recordsQuery.isPending || recordsQuery.isError}
+                onClick={() => downloadRecordsCsv(records)}
+                type="button"
+                variant="outline"
+              >
+                <Download aria-hidden="true" className="size-4" />
+                匯出 CSV
               </Button>
             </div>
           </div>

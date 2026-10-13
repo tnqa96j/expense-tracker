@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
@@ -185,4 +186,75 @@ test("切換月份並依收支類型及類別篩選月度摘要", async ({ page 
   });
   await expect(emptyMonthSummary.getByText("尚無收入紀錄")).toBeVisible();
   await expect(emptyMonthSummary.getByText("尚無支出紀錄")).toBeVisible();
+});
+
+test("匯出包含全部本機收支、正確跳脫文字，空帳本仍有標頭", async ({ page }) => {
+  await page.evaluate(() => {
+    window.localStorage.setItem(
+      "expense-tracker.records",
+      JSON.stringify([
+        {
+          id: "export-income",
+          type: "income",
+          amount: 52000,
+          date: "2025-01-11",
+          category: "薪資",
+          note: "一月薪資",
+        },
+        {
+          id: "export-expense-special",
+          type: "expense",
+          amount: 135.5,
+          date: "2025-01-12",
+          category: "飲食",
+          note: '午餐, "最好吃"\n再來一碗',
+        },
+        {
+          id: "export-expense-empty-note",
+          type: "expense",
+          amount: 25,
+          date: "2025-02-13",
+          category: "交通",
+          note: "",
+        },
+      ]),
+    );
+  });
+  await page.goto("/?month=2025-01&type=income&category=薪資");
+
+  const [filteredExport] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "匯出 CSV" }).click(),
+  ]);
+  expect(filteredExport.suggestedFilename()).toMatch(/^個人帳本-\d{8}\.csv$/);
+  const filteredExportPath = await filteredExport.path();
+  if (!filteredExportPath) {
+    throw new Error("CSV 下載沒有產生檔案");
+  }
+  const csv = await readFile(filteredExportPath, "utf8");
+  expect(csv).toBe(
+    [
+      "收支類型,日期,金額,類別,備註",
+      "支出,2025-02-13,25,交通,",
+      '支出,2025-01-12,135.5,飲食,"午餐, ""最好吃""\n再來一碗"',
+      "收入,2025-01-11,52000,薪資,一月薪資",
+      "",
+    ].join("\r\n"),
+  );
+
+  await page.evaluate(() =>
+    window.localStorage.setItem("expense-tracker.records", "[]"),
+  );
+  await page.reload();
+  const [emptyExport] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "匯出 CSV" }).click(),
+  ]);
+  const emptyExportPath = await emptyExport.path();
+  if (!emptyExportPath) {
+    throw new Error("空帳本 CSV 下載沒有產生檔案");
+  }
+  expect(await readFile(emptyExportPath, "utf8")).toBe(
+    "收支類型,日期,金額,類別,備註\r\n",
+  );
 });
